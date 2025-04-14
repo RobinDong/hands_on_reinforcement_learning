@@ -41,3 +41,21 @@ class EpsilonGreedy(Solver):
         reward = self.bandit.step(k)
         self.estimates[k] += 1 / (self.counts[k] + 1) * (reward - self.estimates[k])
         return k
+
+
+class DecayingEpsilonGreedy(Solver):
+    def __init__(self, bandit: BernouliBandit):
+        super().__init__(bandit)
+        self.estimates = torch.zeros(self.bandit.K)
+        self.total_count = 0
+
+    def run_one_step(self) -> int:
+        self.total_count += 1
+        if torch.rand(1)[0] < (1 / self.total_count):
+            k = torch.randint(0, self.bandit.K, (1,))[0]
+        else:
+            k = torch.argmax(self.estimates)
+
+        reward = self.bandit.step(k)
+        self.estimates[k] += 1 / (self.counts[k] + 1) * (reward - self.estimates[k])
+        return k

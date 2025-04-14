@@ -2,7 +2,7 @@ import torch
 import matplotlib.pyplot as plt
 
 from bandit import BernouliBandit
-from solver import EpsilonGreedy
+from solver import EpsilonGreedy, DecayingEpsilonGreedy
 
 
 def plot_results(solvers):
@@ -11,7 +11,7 @@ def plot_results(solvers):
         plt.plot(
             time_list,
             [pair[1] for pair in solver.regrets],
-            label=solver.__class__.__name__,
+            label=f"{solver.__class__.__name__}-{solver.epsilon}",
         )
     plt.xlabel("Time steps")
     plt.ylabel("Cumulative regrets")
@@ -23,7 +23,14 @@ def plot_results(solvers):
 if __name__ == "__main__":
     torch.manual_seed(1023)
     bandit = BernouliBandit(20)
-    solver = EpsilonGreedy(bandit, epsilon=0.1)
-    solver.run(1000)
+    solver = DecayingEpsilonGreedy(bandit)
+    solver.run(10000)
     print("Cumulative regret:", solver.regrets[-1][1])
-    plot_results([solver])
+
+    bandit = BernouliBandit(20)
+    epsilons = [1e-4, 1e-3, 1e-2, 1e-1, 0.5]
+    solvers = [EpsilonGreedy(bandit, epsilon=ep) for ep in epsilons]
+    for solver in solvers:
+        solver.run(10000)
+
+    plot_results(solvers)
