@@ -59,3 +59,38 @@ class DecayingEpsilonGreedy(Solver):
         reward = self.bandit.step(k)
         self.estimates[k] += 1 / (self.counts[k] + 1) * (reward - self.estimates[k])
         return k
+
+
+class UCB(Solver):
+    def __init__(self, bandit: BernouliBandit):
+        super().__init__(bandit)
+        self.estimates = torch.zeros(self.bandit.K)
+        self.total_count = 0
+
+    def run_one_step(self) -> int:
+        self.total_count += 1
+        ucb = self.estimates + torch.sqrt(
+            torch.log(torch.tensor(self.total_count)) / (2 * self.counts + 1)
+        )
+        k = torch.argmax(ucb)
+        reward = self.bandit.step(k)
+        self.estimates[k] += 1 / (self.counts[k] + 1) * (reward - self.estimates[k])
+        return k
+
+
+class ThompsonSampling(Solver):
+    def __init__(self, bandit: BernouliBandit):
+        super().__init__(bandit)
+        # Can't use torch.zeros() because all-zeros doesn't satisfy beta-distribution
+        self.reward_one = torch.ones(self.bandit.K)
+        self.reward_zero = torch.ones(self.bandit.K)
+
+    def run_one_step(self) -> int:
+        sampling = torch.distributions.beta.Beta(
+            self.reward_one, self.reward_zero
+        ).sample()
+        k = torch.argmax(sampling)
+        reward = self.bandit.step(k)
+        self.reward_one[k] += reward
+        self.reward_zero[k] += 1 - reward
+        return k
