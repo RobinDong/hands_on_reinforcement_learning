@@ -1,5 +1,4 @@
 import copy
-import time
 
 from cliff_walking import CliffWalkingEnv
 
@@ -43,7 +42,7 @@ class PolicyIteration:
                         action
                     ]
                     qsa = prob * (reward + self.gamma * self.v[next_row][next_col])
-                    qsa_list.append(self.pi[row][col][action] * qsa)
+                    qsa_list.append(qsa)
                 maxq = max(qsa_list)
                 cntq = qsa_list.count(maxq)
                 self.pi[row][col] = [1 / cntq if q == maxq else 0 for q in qsa_list]
@@ -56,12 +55,10 @@ class PolicyIteration:
             new_pi = self.policy_improvement()
             if old_pi == new_pi:
                 break
-            print(new_pi)
-            time.sleep(1)
 
 
 if __name__ == "__main__":
     env = CliffWalkingEnv()
     poi = PolicyIteration(env, 0.001, 0.9)
     poi.policy_iteration()
-    print(poi.v)
+    [print(row) for row in poi.pi]
